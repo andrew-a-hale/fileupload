@@ -1,0 +1,9 @@
+Include
+Scripts
+Lib
+pyvenv.cfg
+.env
+share
+site.db
+logs
+**/__pycache__/**
