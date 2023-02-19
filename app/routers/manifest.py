@@ -1,37 +1,36 @@
-from fastapi import APIRouter, HTTPException, Response
+import uuid
+from fastapi import APIRouter, HTTPException, Response, Depends
 from sqlalchemy.orm import Session
-from fastapi import Depends
 
 from app.dependencies import get_db
-from app import schemas
-from app import models
+from app.schemas.manifest import ManifestCreate, ManifestRead
+import app.models as models
 
 router = APIRouter()
 
 
-@router.get("/manifest/{manifest_id}", status_code=200)
-def get_manifest(manifest_id: int, db: Session = Depends(get_db)):
-    manifest = db.get(models.Manifest, manifest_id)
-    if (manifest is None):
-        raise HTTPException(status_code=404, detail="Data not found")
-    return manifest
+@router.get('/manifest/{guid}', status_code=200, response_model=ManifestRead)
+def get_manifest(guid: uuid.UUID, db: Session = Depends(get_db)):
+    manifest = db.query(models.Manifest).where(models.Manifest.guid == guid).one_or_none()
+    if not manifest:
+        raise HTTPException(status_code=404, detail='Manifest not found')
+    return manifest.__dict__
 
 
-@router.post("/manifest", status_code=201)
-def add_manifest(manifest: schemas.ManifestCreate,
-                 db: Session = Depends(get_db)):
+@router.post('/manifest', status_code=201, response_model=ManifestRead)
+def add_manifest(manifest: ManifestCreate, db: Session = Depends(get_db)):
     db_manifest = models.Manifest(**manifest.dict())
     db.add(db_manifest)
     db.commit()
     db.refresh(db_manifest)
-    return db_manifest
+    return db_manifest.__dict__
 
 
-@router.delete("/manifest/{manifest_id}", status_code=200)
-def delete_manifest(manifest_id: int, db: Session = Depends(get_db)):
-    manifest = db.get(models.Manifest, manifest_id)
-    if (manifest is None):
+@router.delete('/manifest/{guid}', status_code=200)
+def delete_manifest(guid: uuid.UUID, db: Session = Depends(get_db)):
+    manifest = db.query(models.Manifest).where(models.Manifest.guid == guid).one_or_none()
+    if not manifest:
         return Response(status_code=204, content=None)
     db.delete(manifest)
     db.commit()
-    return {"message": f"manifest {manifest_id} deleted"}
+    return {'message': f'manifest {guid} deleted'}
