@@ -1,12 +1,11 @@
 import hashlib
-import logging
 import uuid
 from fastapi import APIRouter, Form, HTTPException, Response
 from sqlalchemy.orm import Session
 from fastapi import Depends, UploadFile
 
 from app.dependencies import get_db
-from app.schemas.bucket import Bucket, DbBucket, FileAlreadyUploadedError, S3Bucket
+from app.schemas.bucket import FileAlreadyUploadedError, BucketDoesNotExistError, bucket_model_to_schema
 from app.schemas.payload import PayloadCreate, PayloadRead
 from app import models
 
@@ -44,23 +43,14 @@ async def add_payload(file: UploadFile, manifest_guid: uuid.UUID = Form(), bucke
                               content_type=file.content_type,
                               md5=hashlib.md5(content).hexdigest())
     
-    # upload to bucket
-    match db_bucket.type:
-        case models.BucketType.LOCAL:
-            bucket_class = Bucket
-        case models.BucketType.S3:
-            bucket_class = S3Bucket
-        case models.BucketType.DATABASE:
-            bucket_class = DbBucket
-        case _:
-            logging.error("Misconfigured bucket")
-            raise HTTPException(status_code=500, detail="Misconfigured bucket")
-            
+    # upload to bucket            
     try:
-        bucket = bucket_class.from_orm(db_bucket)
+        bucket = bucket_model_to_schema(db_bucket)
         bucket.send(payload, content, db)
     except FileAlreadyUploadedError as e:
         raise HTTPException(status_code=400, detail=e.message)
+    except BucketDoesNotExistError as e:
+        raise HTTPException(status_code=500, detail=e.message)
     
     # insert payload record into db
     db_payload = models.Payload(guid=payload.guid, manifest_guid=manifest_guid, bucket_guid=bucket_guid, filename=payload.filename, content_type=payload.content_type, md5=payload.md5)

@@ -3,7 +3,7 @@ version: "1.0.0"
 services:
   web:
     build: .
-    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000'
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; pytest tests; uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000'
     volumes:
       - ./app/:/usr/src/app/
     ports:

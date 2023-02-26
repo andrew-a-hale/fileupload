@@ -1,5 +1,6 @@
 import os
 import uuid
+import logging
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,24 @@ from app.schemas.files import FilesCreate
 from app.schemas.payload import PayloadCreate
 from app.models import BucketType, Files, Project
 
+def bucket_model_to_schema(bucket_model):
+    match bucket_model.type:
+        case BucketType.LOCAL:
+            bucket_class = Bucket
+        case BucketType.S3:
+            bucket_class = S3Bucket
+        case BucketType.DATABASE:
+            bucket_class = DbBucket
+        case _:
+            logging.error("Misconfigured bucket")
+            raise Exception("Misconfigured bucket")
+            
+    return bucket_class.from_orm(bucket_model)
+
+class BucketDoesNotExistError(ValueError):
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
 
 class FileAlreadyUploadedError(OSError):
 
