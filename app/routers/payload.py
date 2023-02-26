@@ -21,7 +21,7 @@ def get_payload(guid: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post('/payload', status_code=201, response_model=PayloadRead)
-async def add_payload(file: UploadFile, manifest_guid: uuid.UUID = Form(), bucket_guid: uuid.UUID = Form(), db: Session = Depends(get_db)):
+async def add_payload(response: Response, file: UploadFile, manifest_guid: uuid.UUID = Form(), bucket_guid: uuid.UUID = Form(), db: Session = Depends(get_db)):
     
     # read file + form
     content = await file.read()
@@ -57,6 +57,7 @@ async def add_payload(file: UploadFile, manifest_guid: uuid.UUID = Form(), bucke
     db.add(db_payload)
     db.commit()
     db.refresh(db_payload)
+    response['Content-Location'] = f'/payload/{db_payload.guid}'
     
     return db_payload.__dict__
 
