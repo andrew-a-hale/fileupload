@@ -67,6 +67,14 @@ class Bucket(BucketBase):
     class Config:
         orm_mode = True
 
+    @property
+    def dir(self):
+        dir = os.path.join(os.getenv('LOCAL_BUCKET_PATH'), self.project.value,
+                           self.path)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        return dir
+
     @log_debug_decorator
     def send(self, payload_metadata, payload, _):
         filepath = os.path.join(self.dir, payload_metadata.filename)

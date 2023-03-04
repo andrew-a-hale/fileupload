@@ -19,7 +19,7 @@ def get_bucket(guid: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post('/bucket', status_code=201, response_model=BucketRead)
-def add_bucket(response: Response, bucket: BucketCreate, db: Session = Depends(get_db)):
+def add_bucket(bucket: BucketCreate, db: Session = Depends(get_db)):
     # check if bucket already exists
     result = db.query(
         models.Bucket).where(models.Bucket.guid == bucket.guid).one_or_none()
@@ -32,7 +32,6 @@ def add_bucket(response: Response, bucket: BucketCreate, db: Session = Depends(g
     db.add(db_bucket)
     db.commit()
     db.refresh(db_bucket)
-    response.headers['Content-Location'] = f'/bucket/{db_bucket.guid}'
     return db_bucket.__dict__
 
 

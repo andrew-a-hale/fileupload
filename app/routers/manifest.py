@@ -18,12 +18,11 @@ def get_manifest(guid: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post('/manifest', status_code=201, response_model=ManifestRead)
-def add_manifest(response: Response, manifest: ManifestCreate, db: Session = Depends(get_db)):
+def add_manifest(manifest: ManifestCreate, db: Session = Depends(get_db)):
     db_manifest = models.Manifest(**manifest.dict())
     db.add(db_manifest)
     db.commit()
     db.refresh(db_manifest)
-    response['Content-Location'] = f'/manifest/{db_manifest.guid}'
     return db_manifest.__dict__
 
 
